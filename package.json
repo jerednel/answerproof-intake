@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs"
+    "check": "node --check server.mjs && node --check scripts/fetch-leads.mjs",
+    "leads": "node scripts/fetch-leads.mjs"
   },
   "engines": {
     "node": ">=20"

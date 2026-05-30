@@ -7,6 +7,7 @@ Tiny Railway-hosted lead capture app for the Answerproof diagnostic.
 ```bash
 npm run check
 npm start
+npm run leads
 ```
 
 ## Environment
