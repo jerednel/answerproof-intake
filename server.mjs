@@ -1,6 +1,7 @@
 import { createServer } from 'node:http';
-import { appendFile, mkdir, readFile } from 'node:fs/promises';
+import { access, appendFile, mkdir, readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { constants } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 
@@ -159,6 +160,16 @@ async function saveLead(lead) {
   await appendFile(LEADS_PATH, `${JSON.stringify(lead)}\n`, 'utf8');
 }
 
+async function storageStatus() {
+  await mkdir(DATA_DIR, { recursive: true });
+  await access(DATA_DIR, constants.W_OK);
+  return {
+    data_dir: DATA_DIR,
+    writable: true,
+    leads_file_exists: existsSync(LEADS_PATH)
+  };
+}
+
 async function adminExport(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const token = url.searchParams.get('token') || req.headers.authorization?.replace(/^Bearer\s+/i, '');
@@ -181,7 +192,11 @@ const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
 
     if (req.method === 'GET' && url.pathname === '/health') {
-      sendJson(res, 200, { ok: true });
+      try {
+        sendJson(res, 200, { ok: true, storage: await storageStatus() });
+      } catch (error) {
+        sendJson(res, 500, { ok: false, storage: { data_dir: DATA_DIR, writable: false }, error: error.message });
+      }
       return;
     }
 
@@ -219,4 +234,14 @@ const server = createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Answerproof intake listening on ${PORT}`);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('uncaughtException', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (error) => {
+  console.error('unhandledRejection', error);
+  process.exit(1);
 });
